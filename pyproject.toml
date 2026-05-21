@@ -1,0 +1,10 @@
+[project]
+name = "APP_NAME_PLACEHOLDER"
+version = "0.1.0"
+description = "Reusable Spark ECS application"
+requires-python = ">=3.11"
+
+dependencies = [
+    "pyspark==3.5.1",
+    "boto3"
+]

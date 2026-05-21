@@ -1,0 +1,23 @@
+{
+  "family": "APP_NAME_PLACEHOLDER",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "EXECUTION_ROLE_PLACEHOLDER",
+  "containerDefinitions": [
+    {
+      "name": "APP_NAME_PLACEHOLDER",
+      "image": "IMAGE_PLACEHOLDER",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/APP_NAME_PLACEHOLDER",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

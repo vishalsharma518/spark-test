@@ -1,0 +1,79 @@
+name: Deploy Spark ECS Job
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECS_CLUSTER_NAME: ${{ secrets.ECS_CLUSTER_NAME }}
+  ECS_SUBNET_ID: ${{ secrets.ECS_SUBNET_ID }}
+  ECS_SECURITY_GROUP_ID: ${{ secrets.ECS_SECURITY_GROUP_ID }}
+  ECS_EXECUTION_ROLE_ARN: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.github-role-arn }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Set Application Name
+      run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+    - name: Read Version From pyproject.toml
+      run: |
+        VERSION=$(grep '^version =' pyproject.toml | head -1 | cut -d '"' -f2)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Login to ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Create ECR Repository If Missing
+      run: |
+        aws ecr describe-repositories --repository-names $APP_NAME || \
+        aws ecr create-repository --repository-name $APP_NAME
+
+    - name: Set Image URI
+      run: |
+        IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/$APP_NAME:$VERSION
+        echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+    - name: Build Docker Image
+      run: docker build -t $IMAGE_URI .
+
+    - name: Push Docker Image
+      run: docker push $IMAGE_URI
+
+    - name: Render ECS Task Definition
+      run: |
+        bash scripts/render-task-definition.sh \
+        $APP_NAME \
+        $IMAGE_URI \
+        $ECS_EXECUTION_ROLE_ARN
+
+    - name: Register ECS Task Definition
+      run: |
+        aws ecs register-task-definition \
+        --cli-input-json file:///tmp/task-definition-rendered.json
+
+    - name: Run ECS Task
+      run: |
+        aws ecs run-task \
+          --cluster $ECS_CLUSTER_NAME \
+          --launch-type FARGATE \
+          --task-definition $APP_NAME \
+          --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNET_ID],securityGroups=[$ECS_SECURITY_GROUP_ID],assignPublicIp=ENABLED}"
