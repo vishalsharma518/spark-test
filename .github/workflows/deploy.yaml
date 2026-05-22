@@ -57,6 +57,12 @@ jobs:
 
     - name: Push Docker Image
       run: docker push $IMAGE_URI
+    - name: Create CloudWatch Log Group
+      run: |
+        aws logs create-log-group \
+        --log-group-name /ecs/$APP_NAME \
+        --region $AWS_REGION \
+        || true
 
     - name: Render ECS Task Definition
       run: |
