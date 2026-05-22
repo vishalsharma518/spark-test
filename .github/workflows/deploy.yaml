@@ -8,8 +8,8 @@ on:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECS_CLUSTER_NAME: ${{ secrets.ECS_CLUSTER_NAME }}
-  ECS_SUBNET_ID: ${{ secrets.ECS_SUBNET_ID }}
-  ECS_SECURITY_GROUP_ID: ${{ secrets.ECS_SECURITY_GROUP_ID }}
+  ECS_SUBNETS: ${{ secrets.ECS_SUBNETS }}
+  ECS_SECURITY_GROUPS: ${{ secrets.ECS_SECURITY_GROUPS }}
   ECS_EXECUTION_ROLE_ARN: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
 
 jobs:
@@ -76,4 +76,4 @@ jobs:
           --cluster $ECS_CLUSTER_NAME \
           --launch-type FARGATE \
           --task-definition $APP_NAME \
-          --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNET_ID],securityGroups=[$ECS_SECURITY_GROUP_ID],assignPublicIp=ENABLED}"
+          --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNETS],securityGroups=[$ECS_SECURITY_GROUPS],assignPublicIp=ENABLED}"
